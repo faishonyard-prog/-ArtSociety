@@ -7,6 +7,7 @@ function Navbar({ currentView, setCurrentView, cartCount, setIsCartOpen, current
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const navLinks = [
     { id: 'home', label: 'Home' },
+    { id: 'gallery', label: 'Gallery' },
     { id: 'academy', label: 'Art Classes' },
     { id: 'shop', label: 'Shop Gallery' },
     { id: 'custom', label: 'Custom Art' },

@@ -11,6 +11,7 @@ import CartDrawer from './components/ui/CartDrawer';
 // Pages
 import Home from './pages/Home';
 import Shop from './pages/Shop';
+import Gallery from './pages/Gallery';
 import ProductDetail from './pages/ProductDetail';
 import CustomOrder from './pages/CustomOrder';
 import About from './pages/About';
@@ -288,6 +289,7 @@ export default function App() {
         ) : (
           <main className="min-h-[80vh]">
             {currentView === 'home' && <Home setCurrentView={setCurrentView} products={products.filter(p => p.isVisible)} setSelectedProduct={setSelectedProduct} />}
+          {currentView === 'gallery' && <Gallery gallery={gallery} />}
           {currentView === 'shop' && <Shop addToCart={addToCart} products={products.filter(p => p.isVisible)} setCurrentView={setCurrentView} setSelectedProduct={setSelectedProduct} />}
           {currentView === 'academy' && <Academy />}
           {currentView === 'product' && <ProductDetail product={selectedProduct} setCurrentView={setCurrentView} addToCart={addToCart} />}

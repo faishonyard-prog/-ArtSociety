@@ -1,3 +1,4 @@
+import React, { useState } from 'react';
 import { Plus, Trash2, ArrowUp, ArrowDown, Image, Upload } from 'lucide-react';
 
 function AdminGallery({ gallery, db }) {

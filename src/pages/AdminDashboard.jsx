@@ -7,9 +7,9 @@ import AdminOrders from '../components/admin/AdminOrders';
 import AdminUsers from '../components/admin/AdminUsers';
 import AdminCourses from '../components/admin/AdminCourses';
 import AdminGallery from '../components/admin/AdminGallery';
-import AdminAffiliates from './components/admin/AdminAffiliates';
-import AdminCategories from './components/admin/AdminCategories';
-import AdminArticles from './components/admin/AdminArticles';
+import AdminAffiliates from '../components/admin/AdminAffiliates';
+import AdminCategories from '../components/admin/AdminCategories';
+import AdminArticles from '../components/admin/AdminArticles';
 
 function AdminDashboard({ products, setProducts, orders, setOrders, users, setUsers, currentUser, onLogout, courses, setCourses, enrollments, setEnrollments, affiliates, setAffiliates, gallery, setGallery, categories, setCategories, blogs, setBlogs, db, setCurrentView }) {
   const [activeTab, setActiveTab] = useState('overview');
