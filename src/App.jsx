@@ -25,6 +25,9 @@ import NgoSocietyArt from './pages/NgoSocietyArt';
 // Supabase
 import { supabase } from './lib/supabase';
 
+// Vercel Analytics
+import { Analytics } from '@vercel/analytics/react';
+
 import bgSwirl from './assets/bg-swirl.png';
 
 export default function App() {
@@ -232,6 +235,9 @@ export default function App() {
           }}
         />
       )}
+      
+      {/* Vercel Analytics */}
+      <Analytics />
     </div>
   );
 }
