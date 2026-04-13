@@ -1,0 +1,16 @@
+
+> art-society@0.0.0 lint
+> eslint .
+
+
+C:\Users\jparg\OneDrive\Desktop\mahiarts\art society\src\pages\AdminDashboard.jsx
+  4:50  error  'blogs' is defined but never used     no-unused-vars
+  4:57  error  'setBlogs' is defined but never used  no-unused-vars
+  4:93  error  'setUsers' is defined but never used  no-unused-vars
+
+C:\Users\jparg\OneDrive\Desktop\mahiarts\art society\src\pages\Blog.jsx
+  15:7  warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/set-state-in-effect')
+
+Γ£û 4 problems (3 errors, 1 warning)
+  0 errors and 1 warning potentially fixable with the `--fix` option.
+
