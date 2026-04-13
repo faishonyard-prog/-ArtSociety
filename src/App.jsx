@@ -49,6 +49,7 @@ export default function App() {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [toasts, setToasts] = useState([]);
+  const [configError, setConfigError] = useState(false);
 
   const showToast = (message, type = 'success') => {
     const id = Date.now();
@@ -61,6 +62,13 @@ export default function App() {
   // Fetch from Supabase
   useEffect(() => {
     const fetchSupabaseData = async () => {
+      // Check if supabase is initialized correctly (robust client will return data: null)
+      if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) {
+        setConfigError(true);
+        setLoading(false);
+        return;
+      }
+
       try {
         setLoading(true);
         const [
@@ -233,7 +241,23 @@ export default function App() {
           onLogout={() => { setCurrentUser(null); setCurrentView('home'); showToast('Successfully logged out'); }}
         />
 
-        {loading ? (
+        {configError ? (
+          <div className="flex items-center justify-center min-h-[80vh] flex-col text-center px-6">
+            <div className="bg-rose-50 text-rose-600 p-6 rounded-3xl border border-rose-100 max-w-md shadow-xl">
+              <h2 className="text-3xl font-serif font-bold mb-4">Configuration Required</h2>
+              <p className="text-stone-600 mb-6 leading-relaxed">
+                Supabase environment variables are missing! The website cannot load data without a backend connection.
+              </p>
+              <div className="bg-white p-4 rounded-xl text-left text-xs font-mono border border-stone-200 mb-6 overflow-auto">
+                VITE_SUPABASE_URL=...<br/>
+                VITE_SUPABASE_ANON_KEY=...
+              </div>
+              <p className="text-xs text-rose-400 font-bold uppercase tracking-widest px-4">
+                Please set these in your Vercel dashboard and redeploy.
+              </p>
+            </div>
+          </div>
+        ) : loading ? (
           <div className="flex items-center justify-center min-h-[60vh]">
             <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-rose-600"></div>
           </div>
