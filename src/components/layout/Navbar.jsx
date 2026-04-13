@@ -1,3 +1,4 @@
+import React, { useState } from 'react';
 import { ShoppingCart, Menu, X, User, LogOut, LayoutDashboard, History, ChevronDown } from 'lucide-react';
 import BrandLogo from '../common/BrandLogo';
 
