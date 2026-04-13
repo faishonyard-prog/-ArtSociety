@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { Plus, X, Edit2, Eye, EyeOff, Trash2, ExternalLink } from 'lucide-react';
+import { Plus, X, Edit2, Eye, EyeOff, Trash2, ExternalLink, Upload, ImageIcon } from 'lucide-react';
 
 function AdminProducts({ products, categories: categoryObjects, db }) {
   const [isAdding, setIsAdding] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [filterCategory, setFilterCategory] = useState('All');
+  const [isUploading, setIsUploading] = useState(false);
   const [form, setForm] = useState({ name: '', price: '', discountPrice: '', category: '', img: '', isVisible: true, isAffiliate: false, affiliateUrl: '', description: '', stock: 0 });
 
   const categories = categoryObjects.map(c => c.name);
@@ -59,6 +60,18 @@ function AdminProducts({ products, categories: categoryObjects, db }) {
       stock: p.stock || 0
     });
     setIsAdding(true);
+  };
+
+  const handleFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    const url = await db.uploadImage(file, 'products');
+    if (url) {
+      setForm({ ...form, img: url });
+    }
+    setIsUploading(false);
   };
 
   const handleDelete = async (id) => {
@@ -118,9 +131,56 @@ function AdminProducts({ products, categories: categoryObjects, db }) {
               <textarea value={form.description} onChange={(e) => setForm({...form, description: e.target.value})} rows="3" className="w-full p-3 rounded-xl border border-stone-200 outline-none focus:border-rose-500 resize-none" />
             </div>
             <div className="md:col-span-2">
-              <label className="block text-xs font-bold text-stone-500 mb-1 uppercase">Image URL *</label>
-              <input required type="url" value={form.img} onChange={(e) => setForm({...form, img: e.target.value})} className="w-full p-3 rounded-xl border border-stone-200 outline-none focus:border-rose-500" />
-              {form.img && <img src={form.img} alt="Preview" className="h-20 w-20 mt-2 rounded-xl object-cover shadow border border-stone-200" />}
+              <label className="block text-xs font-bold text-stone-500 mb-1 uppercase">Product Image *</label>
+              <div className="flex flex-col md:flex-row gap-4 items-start">
+                <div className="flex-1 w-full space-y-2">
+                  <div className="relative group">
+                    <input 
+                      type="url" 
+                      placeholder="Paste Image URL or Upload below"
+                      value={form.img} 
+                      onChange={(e) => setForm({...form, img: e.target.value})} 
+                      className="w-full p-3 pl-10 rounded-xl border border-stone-200 outline-none focus:border-rose-500 bg-white" 
+                    />
+                    <ImageIcon className="absolute left-3 top-3.5 text-stone-400" size={18} />
+                  </div>
+                  
+                  <div className="relative">
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      onChange={handleFileUpload}
+                      className="hidden" 
+                      id="product-image-upload" 
+                      disabled={isUploading}
+                    />
+                    <label 
+                      htmlFor="product-image-upload"
+                      className={`flex items-center justify-center gap-2 w-full p-3 rounded-xl border-2 border-dashed transition-all cursor-pointer ${
+                        isUploading ? 'bg-stone-50 border-stone-200 cursor-wait' : 'bg-white border-stone-200 hover:border-rose-300 hover:bg-rose-50'
+                      }`}
+                    >
+                      {isUploading ? (
+                        <div className="w-5 h-5 border-2 border-rose-600/30 border-t-rose-600 rounded-full animate-spin"></div>
+                      ) : <Upload size={18} className="text-rose-600" />}
+                      <span className="text-sm font-bold text-stone-700">{isUploading ? 'Uploading Image...' : 'Upload Image from Device'}</span>
+                    </label>
+                  </div>
+                </div>
+
+                {form.img && (
+                  <div className="relative shrink-0 group">
+                    <img src={form.img} alt="Preview" className="h-24 w-24 rounded-2xl object-cover shadow-lg border-2 border-white ring-1 ring-stone-200" />
+                    <button 
+                      type="button"
+                      onClick={() => setForm({...form, img: ''})}
+                      className="absolute -top-2 -right-2 bg-stone-900 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <X size={12} />
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
             {/* Affiliate Toggle */}
             <div className="md:col-span-2 flex items-center gap-4 bg-white p-4 rounded-xl border border-stone-200">

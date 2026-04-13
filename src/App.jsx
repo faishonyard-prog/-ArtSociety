@@ -170,6 +170,30 @@ export default function App() {
     }
   };
 
+  const uploadImage = async (file, folder = 'general') => {
+    try {
+      if (!file) return null;
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+      const filePath = `${folder}/${fileName}`;
+
+      const { data, error } = await supabase.storage
+        .from('mahiarts-media')
+        .upload(filePath, file);
+
+      if (error) throw error;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('mahiarts-media')
+        .getPublicUrl(filePath);
+
+      return publicUrl;
+    } catch (e) {
+      showToast(`Upload failed: ${e.message}`, 'error');
+      return null;
+    }
+  };
+
   // Inject Branding Meta Tags & Favicon dynamically into the Head
   useEffect(() => {
     const setMetaTag = (property, content, isName = false) => {
@@ -314,7 +338,7 @@ export default function App() {
                 categories={categories} setCategories={setCategories}
                 currentUser={currentUser}
                 onLogout={() => { setCurrentUser(null); setCurrentView('home'); }}
-                db={{ update: dbUpdate, insert: dbInsert, delete: dbDelete, refresh: refreshData }}
+                db={{ update: dbUpdate, insert: dbInsert, delete: dbDelete, refresh: refreshData, uploadImage }}
               />
             ) : (
               <div className="flex items-center justify-center min-h-[60vh] flex-col text-center px-4">

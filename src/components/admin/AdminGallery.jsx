@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
-import { Plus, Trash2, ArrowUp, ArrowDown, Image } from 'lucide-react';
+import { Plus, Trash2, ArrowUp, ArrowDown, Image, Upload } from 'lucide-react';
 
 function AdminGallery({ gallery, db }) {
   const [newUrl, setNewUrl] = useState('');
   const [newCaption, setNewCaption] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
 
   const handleAdd = async (e) => {
     e.preventDefault();
@@ -14,6 +14,18 @@ function AdminGallery({ gallery, db }) {
     setNewUrl('');
     setNewCaption('');
     setIsSaving(false);
+  };
+
+  const handleFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    const url = await db.uploadImage(file, 'gallery');
+    if (url) {
+      setNewUrl(url);
+    }
+    setIsUploading(false);
   };
 
   const handleDelete = async (id) => {
@@ -54,22 +66,50 @@ function AdminGallery({ gallery, db }) {
       {/* Add Form */}
       <form onSubmit={handleAdd} className="bg-stone-50 p-6 rounded-2xl border border-stone-200 mb-8 shadow-inner">
         <h4 className="font-bold text-stone-800 mb-4 flex items-center gap-2"><Image size={18} /> Add New Image</h4>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-          <div className="md:col-span-2">
-            <label className="block text-xs font-bold text-stone-500 mb-1 uppercase">Image URL *</label>
-            <input required type="text" value={newUrl} onChange={(e) => setNewUrl(e.target.value)} placeholder="/images/products/example.jpg or https://..." className="w-full p-3 rounded-xl border border-stone-200 outline-none focus:border-rose-500" />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
+          <div className="md:col-span-2 space-y-4">
+            <div>
+              <label className="block text-xs font-bold text-stone-500 mb-1 uppercase">Image Source *</label>
+              <input required type="text" value={newUrl} onChange={(e) => setNewUrl(e.target.value)} placeholder="Image URL..." className="w-full p-3 rounded-xl border border-stone-200 outline-none focus:border-rose-500 bg-white" />
+            </div>
+            
+            <div className="relative">
+              <input 
+                type="file" 
+                accept="image/*" 
+                onChange={handleFileUpload}
+                className="hidden" 
+                id="gallery-upload"
+                disabled={isUploading}
+              />
+              <label 
+                htmlFor="gallery-upload"
+                className={`flex items-center justify-center gap-2 w-full p-4 rounded-xl border-2 border-dashed transition-all cursor-pointer ${
+                  isUploading ? 'bg-stone-50 border-stone-200 cursor-wait' : 'bg-white border-stone-200 hover:border-rose-300 hover:bg-rose-50'
+                }`}
+              >
+                {isUploading ? (
+                  <div className="w-5 h-5 border-2 border-rose-600/30 border-t-rose-600 rounded-full animate-spin"></div>
+                ) : <Upload size={18} className="text-rose-600" />}
+                <span className="text-sm font-bold text-stone-700">{isUploading ? 'Uploading to Storage...' : 'Upload Image from Device'}</span>
+              </label>
+            </div>
           </div>
-          <div>
-            <label className="block text-xs font-bold text-stone-500 mb-1 uppercase">Caption</label>
-            <input type="text" value={newCaption} onChange={(e) => setNewCaption(e.target.value)} placeholder="Optional caption" className="w-full p-3 rounded-xl border border-stone-200 outline-none focus:border-rose-500" />
+          
+          <div className="space-y-4">
+            <div>
+              <label className="block text-xs font-bold text-stone-500 mb-1 uppercase">Caption</label>
+              <input type="text" value={newCaption} onChange={(e) => setNewCaption(e.target.value)} placeholder="Optional caption" className="w-full p-3 rounded-xl border border-stone-200 outline-none focus:border-rose-500" />
+            </div>
+
+            {newUrl && (
+              <div className="p-3 bg-white rounded-xl border border-stone-200 animate-fade-in">
+                <p className="text-[10px] font-bold text-stone-400 mb-2 uppercase">Preview</p>
+                <img src={newUrl} alt="Preview" className="h-32 w-full rounded-lg object-cover shadow" />
+              </div>
+            )}
           </div>
         </div>
-        {newUrl && (
-          <div className="mt-4 p-3 bg-white rounded-xl border border-stone-200">
-            <p className="text-xs font-bold text-stone-500 mb-2 uppercase">Preview</p>
-            <img src={newUrl} alt="Preview" className="h-24 rounded-lg object-cover shadow" onError={(e) => e.target.style.display='none'} />
-          </div>
-        )}
         <div className="flex justify-end pt-4">
           <button type="submit" disabled={isSaving} className="bg-rose-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-rose-700 shadow-lg flex items-center gap-2 disabled:opacity-50">
             {isSaving && <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>}
