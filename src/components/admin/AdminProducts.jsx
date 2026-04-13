@@ -1,36 +1,74 @@
 import React, { useState } from 'react';
 import { Plus, X, Edit2, Eye, EyeOff, Trash2, ExternalLink } from 'lucide-react';
 
-function AdminProducts({ products, setProducts }) {
+function AdminProducts({ products, categories: categoryObjects, db }) {
   const [isAdding, setIsAdding] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [filterCategory, setFilterCategory] = useState('All');
-  const [form, setForm] = useState({ name: '', price: '', discountPrice: '', category: '', img: '', isVisible: true, isAffiliate: false, affiliateUrl: '', description: '' });
+  const [form, setForm] = useState({ name: '', price: '', discountPrice: '', category: '', img: '', isVisible: true, isAffiliate: false, affiliateUrl: '', description: '', stock: 0 });
 
-  const categories = ['Resin', 'Painting', 'Jewelry', 'Handmade', 'Artist Essentials'];
+  const categories = categoryObjects.map(c => c.name);
   const filtered = filterCategory === 'All' ? products : products.filter(p => p.category === filterCategory);
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     e.preventDefault();
-    const data = { ...form, price: Number(form.price), discountPrice: form.discountPrice ? Number(form.discountPrice) : null };
+    setIsSaving(true);
+    const payload = { 
+      name: form.name,
+      price: Number(form.price),
+      discount_price: form.discountPrice ? Number(form.discountPrice) : null,
+      category: form.category,
+      img: form.img,
+      is_visible: form.isVisible,
+      is_affiliate: form.isAffiliate,
+      affiliate_url: form.affiliateUrl,
+      description: form.description,
+      stock: Number(form.stock)
+    };
+
+    let success = false;
     if (editingId) {
-      setProducts(products.map(p => p.id === editingId ? { ...p, ...data } : p));
+      success = await db.update('products', editingId, payload);
     } else {
-      setProducts([{ id: Date.now(), ...data, img: data.img || 'https://placehold.co/400x400?text=Product' }, ...products]);
+      success = await db.insert('products', payload);
     }
-    resetForm();
+
+    if (success) resetForm();
+    setIsSaving(false);
   };
 
   const resetForm = () => {
     setIsAdding(false);
     setEditingId(null);
-    setForm({ name: '', price: '', discountPrice: '', category: '', img: '', isVisible: true, isAffiliate: false, affiliateUrl: '', description: '' });
+    setForm({ name: '', price: '', discountPrice: '', category: '', img: '', isVisible: true, isAffiliate: false, affiliateUrl: '', description: '', stock: 0 });
   };
 
   const handleEdit = (p) => {
     setEditingId(p.id);
-    setForm({ name: p.name, price: p.price, discountPrice: p.discountPrice || '', category: p.category, img: p.img, isVisible: p.isVisible, isAffiliate: p.isAffiliate || false, affiliateUrl: p.affiliateUrl || '', description: p.description || '' });
+    setForm({ 
+      name: p.name, 
+      price: p.price, 
+      discountPrice: p.discountPrice || '', 
+      category: p.category, 
+      img: p.img, 
+      isVisible: p.isVisible, 
+      isAffiliate: p.isAffiliate || false, 
+      affiliateUrl: p.affiliateUrl || '', 
+      description: p.description || '',
+      stock: p.stock || 0
+    });
     setIsAdding(true);
+  };
+
+  const handleDelete = async (id) => {
+    if (window.confirm("Are you sure?")) {
+      await db.delete('products', id);
+    }
+  };
+
+  const toggleVisibility = async (p) => {
+    await db.update('products', p.id, { is_visible: !p.isVisible });
   };
 
   return (
@@ -71,6 +109,10 @@ function AdminProducts({ products, setProducts }) {
               <label className="block text-xs font-bold text-stone-500 mb-1 uppercase">Discount Price (₹)</label>
               <input type="number" min="0" value={form.discountPrice} onChange={(e) => setForm({...form, discountPrice: e.target.value})} className="w-full p-3 rounded-xl border border-stone-200 outline-none focus:border-rose-500" />
             </div>
+            <div>
+              <label className="block text-xs font-bold text-stone-500 mb-1 uppercase">Stock Level</label>
+              <input type="number" min="0" value={form.stock} onChange={(e) => setForm({...form, stock: e.target.value})} className="w-full p-3 rounded-xl border border-stone-200 outline-none focus:border-rose-500" />
+            </div>
             <div className="md:col-span-2">
               <label className="block text-xs font-bold text-stone-500 mb-1 uppercase">Description</label>
               <textarea value={form.description} onChange={(e) => setForm({...form, description: e.target.value})} rows="3" className="w-full p-3 rounded-xl border border-stone-200 outline-none focus:border-rose-500 resize-none" />
@@ -92,7 +134,10 @@ function AdminProducts({ products, setProducts }) {
             </div>
           </div>
           <div className="flex justify-end pt-2">
-            <button type="submit" className="bg-rose-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-rose-700 shadow-lg">{editingId ? 'Update Product' : 'Save Product'}</button>
+            <button type="submit" disabled={isSaving} className="bg-rose-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-rose-700 shadow-lg disabled:opacity-50 flex items-center gap-2">
+              {isSaving && <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>}
+              {editingId ? 'Update Product' : 'Save Product'}
+            </button>
           </div>
         </form>
       )}
@@ -128,13 +173,13 @@ function AdminProducts({ products, setProducts }) {
                   ) : <span className="font-bold text-stone-900 text-sm">₹{p.price}</span>}
                 </td>
                 <td className="p-4 text-center">
-                  <button onClick={() => setProducts(products.map(x => x.id === p.id ? { ...x, isVisible: !x.isVisible } : x))} className={`p-2 rounded-full ${p.isVisible ? 'text-green-600 hover:bg-green-50' : 'text-stone-400 hover:bg-stone-200'}`}>
+                  <button onClick={() => toggleVisibility(p)} className={`p-2 rounded-full ${p.isVisible ? 'text-green-600 hover:bg-green-50' : 'text-stone-400 hover:bg-stone-200'}`}>
                     {p.isVisible ? <Eye size={18} /> : <EyeOff size={18} />}
                   </button>
                 </td>
                 <td className="p-4 text-right space-x-1">
                   <button onClick={() => handleEdit(p)} className="text-stone-500 hover:text-stone-900 p-2 bg-stone-100 rounded-lg hover:bg-stone-200"><Edit2 size={14} /></button>
-                  <button onClick={() => setProducts(products.filter(x => x.id !== p.id))} className="text-stone-500 hover:text-red-600 p-2 bg-stone-100 rounded-lg hover:bg-red-50"><Trash2 size={14} /></button>
+                  <button onClick={() => handleDelete(p.id)} className="text-stone-500 hover:text-red-600 p-2 bg-stone-100 rounded-lg hover:bg-red-50"><Trash2 size={14} /></button>
                 </td>
               </tr>
             ))}

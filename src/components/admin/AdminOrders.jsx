@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 
-function AdminOrders({ orders, setOrders }) {
+function AdminOrders({ orders, db }) {
   const [filterStatus, setFilterStatus] = useState('All');
   const statuses = ['All', 'Pending', 'In Progress', 'Shipped', 'Delivered', 'Cancelled'];
   const filtered = filterStatus === 'All' ? orders : orders.filter(o => o.status === filterStatus);
 
-  const handleStatusChange = (id, newStatus) => {
-    setOrders(orders.map(o => o.id === id ? { ...o, status: newStatus } : o));
+  const handleStatusChange = async (id, newStatus) => {
+    await db.update('orders', id, { status: newStatus });
   };
 
   return (

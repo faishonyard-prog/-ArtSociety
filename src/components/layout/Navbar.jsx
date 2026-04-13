@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
-import { ShoppingCart, Menu, X, User } from 'lucide-react';
+import { ShoppingCart, Menu, X, User, LogOut, LayoutDashboard, History, ChevronDown } from 'lucide-react';
 import BrandLogo from '../common/BrandLogo';
 
-function Navbar({ currentView, setCurrentView, cartCount, setIsCartOpen, currentUser }) {
+function Navbar({ currentView, setCurrentView, cartCount, setIsCartOpen, currentUser, onLogout }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const navLinks = [
     { id: 'home', label: 'Home' },
     { id: 'academy', label: 'Art Classes' },
@@ -48,17 +48,60 @@ function Navbar({ currentView, setCurrentView, cartCount, setIsCartOpen, current
           {/* Icons & Auth */}
           <div className="flex items-center space-x-4 md:space-x-5">
             {currentUser ? (
-              <button 
-                onClick={() => setCurrentView(currentUser.role === 'Admin' ? 'admin' : 'home')}
-                className="hidden md:flex items-center gap-2 text-sm font-bold text-stone-700 hover:text-rose-600 bg-stone-100 px-3 py-1.5 rounded-full transition-colors"
-              >
-                <User size={16} />
-                {currentUser.role === 'Admin' ? 'Dashboard' : currentUser.name.split(' ')[0]}
-              </button>
+              <div className="relative">
+                <button 
+                  onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                  className="hidden md:flex items-center gap-2 text-sm font-bold text-stone-700 hover:text-rose-600 bg-stone-100 px-3 py-1.5 rounded-full transition-all hover:bg-white hover:shadow-sm border border-transparent hover:border-stone-200"
+                >
+                  <div className="w-6 h-6 bg-rose-100 rounded-full flex items-center justify-center text-rose-600">
+                    <User size={14} />
+                  </div>
+                  {currentUser.name.split(' ')[0]}
+                  <ChevronDown size={14} className={`transition-transform duration-200 ${isUserMenuOpen ? 'rotate-180' : ''}`} />
+                </button>
+
+                {/* User Dropdown Desktop */}
+                {isUserMenuOpen && (
+                  <>
+                    <div className="fixed inset-0 z-10" onClick={() => setIsUserMenuOpen(false)}></div>
+                    <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-2xl border border-stone-100 py-2 z-20 animate-fade-in-up origin-top-right">
+                      <div className="px-4 py-3 border-b border-stone-50 mb-1">
+                        <p className="text-xs font-bold text-stone-400 uppercase tracking-widest">Signed in as</p>
+                        <p className="text-sm font-bold text-stone-900 truncate">{currentUser.email}</p>
+                      </div>
+                      
+                      <button 
+                        onClick={() => { setCurrentView('profile'); setIsUserMenuOpen(false); }}
+                        className="w-full flex items-center gap-3 px-4 py-2 text-sm text-stone-600 hover:bg-stone-50 hover:text-rose-600 transition-colors"
+                      >
+                        <History size={16} /> My Activity
+                      </button>
+
+                      {currentUser.role === 'Admin' && (
+                        <button 
+                          onClick={() => { setCurrentView('admin'); setIsUserMenuOpen(false); }}
+                          className="w-full flex items-center gap-3 px-4 py-2 text-sm text-stone-600 hover:bg-stone-50 hover:text-rose-600 transition-colors"
+                        >
+                          <LayoutDashboard size={16} /> Admin Panel
+                        </button>
+                      )}
+
+                      <div className="border-t border-stone-50 mt-1 pt-1">
+                        <button 
+                          onClick={() => { onLogout(); setIsUserMenuOpen(false); }}
+                          className="w-full flex items-center gap-3 px-4 py-2 text-sm text-rose-600 hover:bg-rose-50 transition-colors font-bold"
+                        >
+                          <LogOut size={16} /> Sign Out
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
             ) : (
               <button 
                 onClick={() => setCurrentView('auth')}
-                className="hidden md:block text-sm font-bold text-stone-700 hover:text-rose-600"
+                className="hidden md:block text-sm font-bold text-stone-700 hover:text-rose-600 px-4 py-2 rounded-full border border-stone-200 hover:border-rose-300 transition-all"
               >
                 Login
               </button>

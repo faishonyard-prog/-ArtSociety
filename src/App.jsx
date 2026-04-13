@@ -21,6 +21,7 @@ import AuthScreen from './pages/AuthScreen';
 import AdminDashboard from './pages/AdminDashboard';
 import Academy from './pages/Academy';
 import NgoSocietyArt from './pages/NgoSocietyArt';
+import UserDashboard from './pages/UserDashboard';
 
 // Supabase
 import { supabase } from './lib/supabase';
@@ -45,7 +46,17 @@ export default function App() {
   const [enrollments, setEnrollments] = useState([]);
   const [affiliates, setAffiliates] = useState([]);
   const [gallery, setGallery] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [toasts, setToasts] = useState([]);
+
+  const showToast = (message, type = 'success') => {
+    const id = Date.now();
+    setToasts(prev => [...prev, { id, message, type }]);
+    setTimeout(() => {
+      setToasts(prev => prev.filter(t => t.id !== id));
+    }, 3000);
+  };
 
   // Fetch from Supabase
   useEffect(() => {
@@ -60,7 +71,8 @@ export default function App() {
           { data: coursesData },
           { data: enrollmentsData },
           { data: affiliatesData },
-          { data: galleryData }
+          { data: galleryData },
+          { data: categoriesData }
         ] = await Promise.all([
           supabase.from('products').select('*').order('id', { ascending: true }),
           supabase.from('blogs').select('*').order('id', { ascending: true }),
@@ -69,10 +81,11 @@ export default function App() {
           supabase.from('courses').select('*').order('id', { ascending: true }),
           supabase.from('enrollments').select('*').order('id', { ascending: true }),
           supabase.from('affiliates').select('*').order('id', { ascending: true }),
-          supabase.from('gallery').select('*').order('order', { ascending: true })
+          supabase.from('gallery').select('*').order('order', { ascending: true }),
+          supabase.from('categories').select('*').order('name', { ascending: true })
         ]);
 
-        if (productsData) setProducts(productsData.map(p => ({ ...p, discountPrice: p.discount_price, isVisible: p.is_visible })));
+        if (productsData) setProducts(productsData.map(p => ({ ...p, discountPrice: p.discount_price, isVisible: p.is_visible, isAffiliate: p.is_affiliate, affiliateUrl: p.affiliate_url })));
         if (blogsData) setBlogs(blogsData);
         if (ordersData) setOrders(ordersData);
         if (usersData) setUsers(usersData);
@@ -80,6 +93,7 @@ export default function App() {
         if (enrollmentsData) setEnrollments(enrollmentsData.map(e => ({...e, studentName: e.student_name, courseId: e.course_id, courseName: e.course_name, paymentStatus: e.payment_status, enrolledDate: e.enrolled_date })));
         if (affiliatesData) setAffiliates(affiliatesData.map(a => ({...a, isActive: a.is_active })));
         if (galleryData) setGallery(galleryData);
+        if (categoriesData) setCategories(categoriesData);
       } catch (error) {
         console.error("Error fetching Supabase data:", error);
       } finally {
@@ -89,6 +103,64 @@ export default function App() {
     
     fetchSupabaseData();
   }, []);
+
+  const refreshData = async (table) => {
+    const { data } = await supabase.from(table).select('*').order(table === 'gallery' ? 'order' : 'id', { ascending: true });
+    if (!data) return;
+    
+    switch(table) {
+      case 'products': 
+        setProducts(data.map(p => ({ ...p, discountPrice: p.discount_price, isVisible: p.is_visible, isAffiliate: p.is_affiliate, affiliateUrl: p.affiliate_url })));
+        break;
+      case 'blogs': setBlogs(data); break;
+      case 'orders': setOrders(data); break;
+      case 'users': setUsers(data); break;
+      case 'courses': setCourses(data.map(c => ({...c, firstMonth: c.first_month, isActive: c.is_active }))); break;
+      case 'enrollments': setEnrollments(data.map(e => ({...e, studentName: e.student_name, courseId: e.course_id, courseName: e.course_name, paymentStatus: e.payment_status, enrolledDate: e.enrolled_date }))); break;
+      case 'affiliates': setAffiliates(data.map(a => ({...a, isActive: a.is_active }))); break;
+      case 'gallery': setGallery(data); break;
+      case 'categories': setCategories(data); break;
+    }
+  };
+
+  const dbUpdate = async (table, id, data, idField = 'id') => {
+    try {
+      const { error } = await supabase.from(table).update(data).eq(idField, id);
+      if (error) throw error;
+      await refreshData(table);
+      showToast(`${table.slice(0, -1)} updated successfully`);
+      return true;
+    } catch (e) {
+      showToast(e.message, 'error');
+      return false;
+    }
+  };
+
+  const dbInsert = async (table, data) => {
+    try {
+      const { error } = await supabase.from(table).insert([data]);
+      if (error) throw error;
+      await refreshData(table);
+      showToast(`${table.slice(0, -1)} added successfully`);
+      return true;
+    } catch (e) {
+      showToast(e.message, 'error');
+      return false;
+    }
+  };
+
+  const dbDelete = async (table, id, idField = 'id') => {
+    try {
+      const { error } = await supabase.from(table).delete().eq(idField, id);
+      if (error) throw error;
+      await refreshData(table);
+      showToast(`${table.slice(0, -1)} deleted`);
+      return true;
+    } catch (e) {
+      showToast(e.message, 'error');
+      return false;
+    }
+  };
 
   // Inject Branding Meta Tags & Favicon dynamically into the Head
   useEffect(() => {
@@ -158,6 +230,7 @@ export default function App() {
           cartCount={cart.length} 
           setIsCartOpen={setIsCartOpen} 
           currentUser={currentUser}
+          onLogout={() => { setCurrentUser(null); setCurrentView('home'); showToast('Successfully logged out'); }}
         />
 
         {loading ? (
@@ -176,6 +249,22 @@ export default function App() {
           {currentView === 'contact' && <Contact />}
           {currentView === 'ngosocietyart' && <NgoSocietyArt setCurrentView={setCurrentView} />}
           {currentView === 'checkout' && <Checkout cart={cart} total={cartTotal} setCart={setCart} setCurrentView={setCurrentView} onAddOrder={handleAddOrder} currentUser={currentUser} />}
+          
+          {/* User Dashboard */}
+          {currentView === 'profile' && (
+            currentUser ? (
+              <UserDashboard 
+                currentUser={currentUser} 
+                orders={orders} 
+                enrollments={enrollments} 
+                setCurrentView={setCurrentView}
+              />
+            ) : (
+              <div className="flex items-center justify-center min-h-[60vh]">
+                <button onClick={() => setCurrentView('auth')} className="bg-rose-600 text-white px-8 py-3 rounded-xl font-bold">Please Login to view Profile</button>
+              </div>
+            )
+          )}
           
           {/* Auth Route */}
           {currentView === 'auth' && (
@@ -198,8 +287,10 @@ export default function App() {
                 enrollments={enrollments} setEnrollments={setEnrollments}
                 affiliates={affiliates} setAffiliates={setAffiliates}
                 gallery={gallery} setGallery={setGallery}
+                categories={categories} setCategories={setCategories}
                 currentUser={currentUser}
                 onLogout={() => { setCurrentUser(null); setCurrentView('home'); }}
+                db={{ update: dbUpdate, insert: dbInsert, delete: dbDelete, refresh: refreshData }}
               />
             ) : (
               <div className="flex items-center justify-center min-h-[60vh] flex-col text-center px-4">
@@ -232,6 +323,18 @@ export default function App() {
           }}
         />
       )}
+
+      {/* Toast Notifications */}
+      <div className="fixed bottom-6 right-6 z-[100] flex flex-col gap-3 pointer-events-none">
+        {toasts.map(t => (
+          <div key={t.id} className={`px-6 py-4 rounded-2xl shadow-2xl text-white font-bold text-sm animate-fade-in-up flex items-center gap-3 border pointer-events-auto ${
+            t.type === 'success' ? 'bg-stone-900 border-stone-800' : 'bg-rose-600 border-rose-500'
+          }`}>
+            <div className={`w-2 h-2 rounded-full ${t.type === 'success' ? 'bg-green-500' : 'bg-white'}`}></div>
+            {t.message}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

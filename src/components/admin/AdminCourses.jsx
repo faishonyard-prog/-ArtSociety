@@ -1,22 +1,37 @@
 import React, { useState } from 'react';
 import { Plus, X, Edit2, Trash2, GraduationCap, Users } from 'lucide-react';
 
-function AdminCourses({ courses, setCourses, enrollments, setEnrollments }) {
+function AdminCourses({ courses, enrollments, db }) {
   const [view, setView] = useState('courses'); // courses | enrollments
   const [isAdding, setIsAdding] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState({ title: '', price: '', firstMonth: '', tag: 'Beginner', duration: '', batches: [], desc: '', isActive: true });
   const [enrollFilter, setEnrollFilter] = useState('All');
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     e.preventDefault();
-    const data = { ...form, price: Number(form.price), firstMonth: Number(form.firstMonth) };
+    setIsSaving(true);
+    const payload = { 
+      title: form.title, 
+      price: Number(form.price), 
+      first_month: Number(form.firstMonth),
+      tag: form.tag,
+      duration: form.duration,
+      batches: form.batches,
+      desc: form.desc,
+      is_active: form.isActive 
+    };
+
+    let success = false;
     if (editingId) {
-      setCourses(courses.map(c => c.id === editingId ? { ...c, ...data } : c));
+      success = await db.update('courses', editingId, payload);
     } else {
-      setCourses([...courses, { id: Date.now(), ...data }]);
+      success = await db.insert('courses', payload);
     }
-    resetForm();
+
+    if (success) resetForm();
+    setIsSaving(false);
   };
 
   const resetForm = () => {
@@ -31,12 +46,19 @@ function AdminCourses({ courses, setCourses, enrollments, setEnrollments }) {
     setIsAdding(true);
   };
 
+  const handleDeleteCourse = async (id) => {
+    if (window.confirm("Delete course and all related data?")) {
+      await db.delete('courses', id);
+    }
+  };
+
   const toggleBatch = (b) => {
     setForm({ ...form, batches: form.batches.includes(b) ? form.batches.filter(x => x !== b) : [...form.batches, b] });
   };
 
-  const handlePaymentToggle = (id) => {
-    setEnrollments(enrollments.map(e => e.id === id ? { ...e, paymentStatus: e.paymentStatus === 'Paid' ? 'Pending' : 'Paid' } : e));
+  const handlePaymentToggle = async (e) => {
+    const newStatus = e.paymentStatus === 'Paid' ? 'Pending' : 'Paid';
+    await db.update('enrollments', e.id, { payment_status: newStatus });
   };
 
   const filteredEnrollments = enrollFilter === 'All' ? enrollments : enrollments.filter(e => e.courseName === enrollFilter);
@@ -105,7 +127,10 @@ function AdminCourses({ courses, setCourses, enrollments, setEnrollments }) {
                 </div>
               </div>
               <div className="flex justify-end pt-2">
-                <button type="submit" className="bg-rose-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-rose-700 shadow-lg">{editingId ? 'Update Course' : 'Save Course'}</button>
+                <button type="submit" disabled={isSaving} className="bg-rose-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-rose-700 shadow-lg disabled:opacity-50 flex items-center gap-2">
+                  {isSaving && <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>}
+                  {editingId ? 'Update Course' : 'Save Course'}
+                </button>
               </div>
             </form>
           )}
@@ -117,7 +142,7 @@ function AdminCourses({ courses, setCourses, enrollments, setEnrollments }) {
                   <span className={`px-2 py-1 rounded-full text-[10px] font-bold ${c.tag === 'Beginner' ? 'bg-emerald-50 text-emerald-700' : c.tag === 'Intermediate' ? 'bg-amber-50 text-amber-700' : 'bg-rose-50 text-rose-700'}`}>{c.tag}</span>
                   <div className="flex gap-1">
                     <button onClick={() => handleEdit(c)} className="p-1.5 bg-stone-100 rounded-lg hover:bg-stone-200 text-stone-500"><Edit2 size={12} /></button>
-                    <button onClick={() => setCourses(courses.filter(x => x.id !== c.id))} className="p-1.5 bg-stone-100 rounded-lg hover:bg-red-50 text-stone-500 hover:text-red-600"><Trash2 size={12} /></button>
+                    <button onClick={() => handleDeleteCourse(c.id)} className="p-1.5 bg-stone-100 rounded-lg hover:bg-red-50 text-stone-500 hover:text-red-600"><Trash2 size={12} /></button>
                   </div>
                 </div>
                 <h4 className="font-serif font-bold text-stone-900 text-lg mb-1">{c.title}</h4>
@@ -167,7 +192,7 @@ function AdminCourses({ courses, setCourses, enrollments, setEnrollments }) {
                     <td className="p-4 text-stone-600 text-sm">{e.batch}</td>
                     <td className="p-4"><span className={`px-2 py-1 rounded-full text-[10px] font-bold ${e.type === 'Online' ? 'bg-blue-50 text-blue-700' : 'bg-amber-50 text-amber-700'}`}>{e.type}</span></td>
                     <td className="p-4">
-                      <button onClick={() => handlePaymentToggle(e.id)} className={`px-3 py-1 rounded-full text-xs font-bold cursor-pointer ${e.paymentStatus === 'Paid' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                      <button onClick={() => handlePaymentToggle(e)} className={`px-3 py-1 rounded-full text-xs font-bold cursor-pointer ${e.paymentStatus === 'Paid' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                         {e.paymentStatus}
                       </button>
                     </td>

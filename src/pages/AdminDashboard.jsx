@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { LayoutDashboard, ShoppingBag, Package, Users, LogOut, GraduationCap, Image, LinkIcon } from 'lucide-react';
+import { LayoutDashboard, ShoppingBag, Package, Users, LogOut, GraduationCap, Image, LinkIcon, Tag } from 'lucide-react';
 
 import AdminOverview from '../components/admin/AdminOverview';
 import AdminProducts from '../components/admin/AdminProducts';
@@ -8,8 +8,9 @@ import AdminUsers from '../components/admin/AdminUsers';
 import AdminCourses from '../components/admin/AdminCourses';
 import AdminGallery from '../components/admin/AdminGallery';
 import AdminAffiliates from '../components/admin/AdminAffiliates';
+import AdminCategories from '../components/admin/AdminCategories';
 
-function AdminDashboard({ products, setProducts, orders, setOrders, users, setUsers, currentUser, onLogout, courses, setCourses, enrollments, setEnrollments, affiliates, setAffiliates, gallery, setGallery }) {
+function AdminDashboard({ products, setProducts, orders, setOrders, users, setUsers, currentUser, onLogout, courses, setCourses, enrollments, setEnrollments, affiliates, setAffiliates, gallery, setGallery, categories, setCategories, db }) {
   const [activeTab, setActiveTab] = useState('overview');
 
   const tabs = [
@@ -20,6 +21,7 @@ function AdminDashboard({ products, setProducts, orders, setOrders, users, setUs
     { id: 'courses', label: 'Courses', icon: GraduationCap },
     { id: 'gallery', label: 'Gallery', icon: Image },
     { id: 'affiliates', label: 'Affiliates', icon: LinkIcon },
+    { id: 'categories', label: 'Categories', icon: Tag },
   ];
 
   return (
@@ -57,14 +59,16 @@ function AdminDashboard({ products, setProducts, orders, setOrders, users, setUs
       </div>
 
       {/* Main Content */}
+      {/* Main Content */}
       <div className="flex-1 bg-white rounded-3xl shadow-sm border border-stone-200 p-6 md:p-8 min-h-[75vh]">
         {activeTab === 'overview' && <AdminOverview products={products} orders={orders} users={users} courses={courses} enrollments={enrollments} affiliates={affiliates} gallery={gallery} setActiveTab={setActiveTab} />}
-        {activeTab === 'orders' && <AdminOrders orders={orders} setOrders={setOrders} />}
-        {activeTab === 'products' && <AdminProducts products={products} setProducts={setProducts} />}
-        {activeTab === 'users' && <AdminUsers users={users} setUsers={setUsers} />}
-        {activeTab === 'courses' && <AdminCourses courses={courses} setCourses={setCourses} enrollments={enrollments} setEnrollments={setEnrollments} />}
-        {activeTab === 'gallery' && <AdminGallery gallery={gallery} setGallery={setGallery} />}
-        {activeTab === 'affiliates' && <AdminAffiliates affiliates={affiliates} setAffiliates={setAffiliates} />}
+        {activeTab === 'orders' && <AdminOrders orders={orders} setOrders={setOrders} db={db} />}
+        {activeTab === 'products' && <AdminProducts products={products} setProducts={setProducts} db={db} categories={categories} />}
+        {activeTab === 'users' && <AdminUsers users={users} setUsers={setUsers} db={db} />}
+        {activeTab === 'courses' && <AdminCourses courses={courses} setCourses={setCourses} enrollments={enrollments} setEnrollments={setEnrollments} db={db} />}
+        {activeTab === 'gallery' && <AdminGallery gallery={gallery} setGallery={setGallery} db={db} />}
+        {activeTab === 'affiliates' && <AdminAffiliates affiliates={affiliates} setAffiliates={setAffiliates} db={db} />}
+        {activeTab === 'categories' && <AdminCategories categories={categories} db={db} />}
       </div>
     </div>
   );

@@ -1,20 +1,32 @@
 import React, { useState } from 'react';
 import { Plus, X, Edit2, Trash2, ExternalLink, Eye, EyeOff } from 'lucide-react';
 
-function AdminAffiliates({ affiliates, setAffiliates }) {
+function AdminAffiliates({ affiliates, db }) {
   const [isAdding, setIsAdding] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState({ name: '', img: '', url: '', price: '', isActive: true });
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     e.preventDefault();
-    const data = { ...form, price: form.price ? Number(form.price) : null };
+    setIsSaving(true);
+    const payload = { 
+      name: form.name, 
+      img: form.img, 
+      url: form.url, 
+      price: form.price ? Number(form.price) : null,
+      is_active: form.isActive 
+    };
+
+    let success = false;
     if (editingId) {
-      setAffiliates(affiliates.map(a => a.id === editingId ? { ...a, ...data } : a));
+      success = await db.update('affiliates', editingId, payload);
     } else {
-      setAffiliates([...affiliates, { id: Date.now(), ...data }]);
+      success = await db.insert('affiliates', payload);
     }
-    resetForm();
+
+    if (success) resetForm();
+    setIsSaving(false);
   };
 
   const resetForm = () => {
@@ -27,6 +39,16 @@ function AdminAffiliates({ affiliates, setAffiliates }) {
     setEditingId(a.id);
     setForm({ name: a.name, img: a.img, url: a.url, price: a.price || '', isActive: a.isActive });
     setIsAdding(true);
+  };
+
+  const handleDelete = async (id) => {
+    if (window.confirm("Delete affiliate link?")) {
+      await db.delete('affiliates', id);
+    }
+  };
+
+  const toggleStatus = async (a) => {
+    await db.update('affiliates', a.id, { is_active: !a.isActive });
   };
 
   return (
@@ -64,7 +86,10 @@ function AdminAffiliates({ affiliates, setAffiliates }) {
           </div>
           {form.img && <img src={form.img} alt="Preview" className="h-16 w-16 rounded-xl object-cover shadow border border-stone-200" />}
           <div className="flex justify-end pt-2">
-            <button type="submit" className="bg-rose-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-rose-700 shadow-lg">{editingId ? 'Update' : 'Save'}</button>
+            <button type="submit" disabled={isSaving} className="bg-rose-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-rose-700 shadow-lg disabled:opacity-50 flex items-center gap-2">
+              {isSaving && <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>}
+              {editingId ? 'Update' : 'Save'}
+            </button>
           </div>
         </form>
       )}
@@ -81,11 +106,11 @@ function AdminAffiliates({ affiliates, setAffiliates }) {
               {a.price && <p className="text-rose-600 font-bold text-sm mb-2">₹{a.price.toLocaleString()}</p>}
               <a href={a.url} target="_blank" rel="noreferrer" className="text-blue-600 text-xs hover:underline truncate block mb-3">{a.url}</a>
               <div className="flex gap-1">
-                <button onClick={() => setAffiliates(affiliates.map(x => x.id === a.id ? { ...x, isActive: !x.isActive } : x))} className={`p-1.5 rounded-lg ${a.isActive ? 'bg-green-50 text-green-600' : 'bg-stone-100 text-stone-400'}`}>
+                <button onClick={() => toggleStatus(a)} className={`p-1.5 rounded-lg ${a.isActive ? 'bg-green-50 text-green-600' : 'bg-stone-100 text-stone-400'}`}>
                   {a.isActive ? <Eye size={14} /> : <EyeOff size={14} />}
                 </button>
                 <button onClick={() => handleEdit(a)} className="p-1.5 bg-stone-100 rounded-lg hover:bg-stone-200 text-stone-500"><Edit2 size={14} /></button>
-                <button onClick={() => setAffiliates(affiliates.filter(x => x.id !== a.id))} className="p-1.5 bg-stone-100 rounded-lg hover:bg-red-50 text-stone-500 hover:text-red-600"><Trash2 size={14} /></button>
+                <button onClick={() => handleDelete(a.id)} className="p-1.5 bg-stone-100 rounded-lg hover:bg-red-50 text-stone-500 hover:text-red-600"><Trash2 size={14} /></button>
               </div>
             </div>
           </div>

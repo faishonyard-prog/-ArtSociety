@@ -1,34 +1,45 @@
 import React, { useState } from 'react';
 import { Plus, Trash2, ArrowUp, ArrowDown, Image } from 'lucide-react';
 
-function AdminGallery({ gallery, setGallery }) {
+function AdminGallery({ gallery, db }) {
   const [newUrl, setNewUrl] = useState('');
   const [newCaption, setNewCaption] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
-  const handleAdd = (e) => {
+  const handleAdd = async (e) => {
     e.preventDefault();
     if (!newUrl) return;
-    setGallery([...gallery, { id: Date.now(), url: newUrl, caption: newCaption, order: gallery.length + 1 }]);
+    setIsSaving(true);
+    await db.insert('gallery', { url: newUrl, caption: newCaption, order: gallery.length + 1 });
     setNewUrl('');
     setNewCaption('');
+    setIsSaving(false);
   };
 
-  const handleDelete = (id) => {
-    setGallery(gallery.filter(g => g.id !== id));
+  const handleDelete = async (id) => {
+    if (window.confirm("Remove this image?")) {
+      await db.delete('gallery', id);
+    }
   };
 
-  const moveUp = (idx) => {
+  const moveUp = async (idx) => {
     if (idx === 0) return;
-    const arr = [...gallery];
-    [arr[idx], arr[idx - 1]] = [arr[idx - 1], arr[idx]];
-    setGallery(arr.map((g, i) => ({ ...g, order: i + 1 })));
+    const itemA = gallery[idx];
+    const itemB = gallery[idx - 1];
+    await Promise.all([
+      db.update('gallery', itemA.id, { order: idx }),
+      db.update('gallery', itemB.id, { order: idx + 1 })
+    ]);
   };
 
-  const moveDown = (idx) => {
+  const moveDown = async (idx) => {
     if (idx === gallery.length - 1) return;
-    const arr = [...gallery];
-    [arr[idx], arr[idx + 1]] = [arr[idx + 1], arr[idx]];
-    setGallery(arr.map((g, i) => ({ ...g, order: i + 1 })));
+    const itemA = gallery[idx];
+    const itemB = gallery[idx + 1];
+    await Promise.all([
+      db.update('gallery', itemA.id, { order: idx + 2 }),
+      db.update('gallery', itemB.id, { order: idx + 1 })
+    ]);
   };
 
   return (
@@ -60,7 +71,10 @@ function AdminGallery({ gallery, setGallery }) {
           </div>
         )}
         <div className="flex justify-end pt-4">
-          <button type="submit" className="bg-rose-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-rose-700 shadow-lg flex items-center gap-2"><Plus size={16} /> Add to Slider</button>
+          <button type="submit" disabled={isSaving} className="bg-rose-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-rose-700 shadow-lg flex items-center gap-2 disabled:opacity-50">
+            {isSaving && <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>}
+            <Plus size={16} /> Add to Slider
+          </button>
         </div>
       </form>
 

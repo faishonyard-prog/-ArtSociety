@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { Search, Plus, X, Key, User, Trash2, Edit2 } from 'lucide-react';
 
-function AdminUsers({ users, setUsers }) {
+function AdminUsers({ users, db }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterRole, setFilterRole] = useState('All');
   const [isAdding, setIsAdding] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState({ name: '', email: '', role: 'Customer' });
 
@@ -15,14 +16,22 @@ function AdminUsers({ users, setUsers }) {
     return matchesSearch && matchesRole;
   });
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     e.preventDefault();
+    setIsSaving(true);
+    let success = false;
+    
     if (editingId) {
-      setUsers(users.map(u => u.id === editingId ? { ...u, ...form } : u));
+      success = await db.update('users', editingId, { name: form.name, email: form.email, role: form.role });
     } else {
-      setUsers([...users, { id: Date.now(), ...form, joined: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) }]);
+      success = await db.insert('users', { 
+        ...form, 
+        joined: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) 
+      });
     }
-    resetForm();
+    
+    if (success) resetForm();
+    setIsSaving(false);
   };
 
   const resetForm = () => {
@@ -35,6 +44,12 @@ function AdminUsers({ users, setUsers }) {
     setEditingId(u.id);
     setForm({ name: u.name, email: u.email, role: u.role });
     setIsAdding(true);
+  };
+
+  const handleDelete = async (id) => {
+    if (window.confirm("Delete user?")) {
+      await db.delete('users', id);
+    }
   };
 
   return (
@@ -81,7 +96,9 @@ function AdminUsers({ users, setUsers }) {
             </div>
           </div>
           <div className="flex justify-end pt-4">
-            <button type="submit" className="bg-rose-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-rose-700 shadow-lg">{editingId ? 'Update User' : 'Save User'}</button>
+            <button type="submit" disabled={isSaving} className="bg-rose-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-rose-700 shadow-lg disabled:opacity-50">
+              {editingId ? 'Update User' : 'Save User'}
+            </button>
           </div>
         </form>
       )}
@@ -113,7 +130,7 @@ function AdminUsers({ users, setUsers }) {
                 <td className="p-4 text-stone-500 text-sm">{user.joined}</td>
                 <td className="p-4 text-right space-x-1">
                   <button onClick={() => handleEdit(user)} className="text-stone-500 hover:text-stone-900 p-2 bg-stone-100 rounded-lg hover:bg-stone-200"><Edit2 size={14} /></button>
-                  <button onClick={() => setUsers(users.filter(u => u.id !== user.id))} className="text-stone-500 hover:text-red-600 p-2 bg-stone-100 rounded-lg hover:bg-red-50"><Trash2 size={14} /></button>
+                  <button onClick={() => handleDelete(user.id)} className="text-stone-500 hover:text-red-600 p-2 bg-stone-100 rounded-lg hover:bg-red-50"><Trash2 size={14} /></button>
                 </td>
               </tr>
             ))}
