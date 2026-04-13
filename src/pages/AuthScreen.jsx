@@ -1,52 +1,73 @@
 import React, { useState } from 'react';
 import BrandLogo from '../components/common/BrandLogo';
+import { supabase } from '../lib/supabase';
 
-function AuthScreen({ setCurrentUser, setCurrentView, users, setUsers }) {
+function AuthScreen({ setCurrentUser, setCurrentView }) {
   const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({ name: '', email: '', password: '' });
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleAuth = (e) => {
+  const handleAuth = async (e) => {
     e.preventDefault();
     setError('');
+    setIsLoading(true);
 
-    if (isLogin) {
-      // Mock Login Logic
-      const user = users.find(u => u.email === formData.email);
-      if (user) {
-        if (formData.password === 'admin123' || formData.password === 'password') {
-          setCurrentUser(user);
-          setCurrentView(user.role === 'Admin' ? 'admin' : 'home');
-        } else {
-          setError('Invalid credentials.');
-        }
+    try {
+      if (isLogin) {
+        // Real Login Logic
+        const { data, error: authError } = await supabase.auth.signInWithPassword({
+          email: formData.email,
+          password: formData.password,
+        });
+
+        if (authError) throw authError;
+        
+        // App.jsx listener will handle state and view redirection
+        setCurrentView('home');
       } else {
-        setError('User not found. Try admin@artsociety.com / admin123');
+        // Real Signup Logic
+        const { data, error: authError } = await supabase.auth.signUp({
+          email: formData.email,
+          password: formData.password,
+          options: {
+            data: {
+              full_name: formData.name,
+            }
+          }
+        });
+
+        if (authError) throw authError;
+
+        if (data.user) {
+          // Check if confirmation is required
+          if (data.session) {
+            setCurrentView('home');
+          } else {
+            setError('Account created! Please check your email for a confirmation link.');
+          }
+        }
       }
-    } else {
-      // Mock Signup Logic
-      if (users.find(u => u.email === formData.email)) {
-        setError('Email already exists.');
-        return;
-      }
-      const newUser = {
-        id: Date.now(),
-        name: formData.name,
-        email: formData.email,
-        role: 'Customer',
-        joined: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-      };
-      setUsers([...users, newUser]);
-      setCurrentUser(newUser);
-      setCurrentView('home');
+    } catch (err) {
+      setError(err.message || 'An error occurred during authentication.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleGoogleAuth = () => {
-    // Mock Google OAuth
-    const googleUser = { id: 999, name: 'Google User', email: 'user@gmail.com', role: 'Customer', joined: 'Today' };
-    setCurrentUser(googleUser);
-    setCurrentView('home');
+  const handleGoogleAuth = async () => {
+    setError('');
+    try {
+      const { error: authError } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin
+        }
+      });
+      if (authError) throw authError;
+    } catch (err) {
+      setError(err.message || 'Google Auth failed.');
+    }
   };
 
   return (
@@ -75,7 +96,12 @@ function AuthScreen({ setCurrentUser, setCurrentView, users, setUsers }) {
             <label className="block text-sm font-bold text-stone-700 mb-1">Password</label>
             <input required type="password" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl outline-none focus:border-rose-500" />
           </div>
-          <button type="submit" className="w-full bg-stone-900 text-white font-bold py-3.5 rounded-xl hover:bg-stone-800 transition-colors mt-2">
+          <button 
+            type="submit" 
+            disabled={isLoading}
+            className="w-full bg-stone-900 text-white font-bold py-3.5 rounded-xl hover:bg-stone-800 transition-colors mt-2 disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            {isLoading && <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>}
             {isLogin ? 'Sign In' : 'Create Account'}
           </button>
         </form>

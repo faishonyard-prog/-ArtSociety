@@ -60,6 +60,72 @@ export default function App() {
     }, 3000);
   };
 
+  // Centralized User Profile Sync
+  const syncUserProfile = async (authUser) => {
+    if (!authUser) {
+      setCurrentUser(null);
+      return;
+    }
+
+    try {
+      // 1. Fetch user profile by email from public.users table
+      const { data: profile, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('email', authUser.email)
+        .maybeSingle();
+
+      if (profile) {
+        setCurrentUser(profile);
+      } else {
+        // 2. Create profile if missing (e.g., first-time Google login)
+        const newUser = {
+          name: authUser.user_metadata?.full_name || authUser.email.split('@')[0],
+          email: authUser.email,
+          role: 'Customer',
+          joined: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+        };
+
+        const { data: createdProfile, error: insertError } = await supabase
+          .from('users')
+          .insert([newUser])
+          .select()
+          .single();
+
+        if (createdProfile) {
+          setCurrentUser(createdProfile);
+          await refreshData('users');
+        }
+      }
+    } catch (err) {
+      console.error("Profile sync error:", err);
+    }
+  };
+
+  // Auth Listener
+  useEffect(() => {
+    // Check current session
+    const initAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        await syncUserProfile(session.user);
+      }
+    };
+
+    initAuth();
+
+    // Listen for changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (session?.user) {
+        await syncUserProfile(session.user);
+      } else {
+        setCurrentUser(null);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
   // Fetch from Supabase
   useEffect(() => {
     const fetchSupabaseData = async () => {
@@ -263,7 +329,12 @@ export default function App() {
           cartCount={cart.length} 
           setIsCartOpen={setIsCartOpen} 
           currentUser={currentUser}
-          onLogout={() => { setCurrentUser(null); setCurrentView('home'); showToast('Successfully logged out'); }}
+          onLogout={async () => { 
+            await supabase.auth.signOut();
+            setCurrentUser(null); 
+            setCurrentView('home'); 
+            showToast('Successfully logged out'); 
+          }}
         />
 
         {configError ? (
