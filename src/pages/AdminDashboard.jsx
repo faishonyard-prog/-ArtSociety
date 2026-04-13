@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { LayoutDashboard, ShoppingBag, Package, Users, LogOut, GraduationCap, Image, LinkIcon, Tag } from 'lucide-react';
+import { LayoutDashboard, ShoppingBag, Package, Users, LogOut, GraduationCap, Image, LinkIcon, Tag, FileText } from 'lucide-react';
 
 import AdminOverview from '../components/admin/AdminOverview';
 import AdminProducts from '../components/admin/AdminProducts';
@@ -7,10 +7,11 @@ import AdminOrders from '../components/admin/AdminOrders';
 import AdminUsers from '../components/admin/AdminUsers';
 import AdminCourses from '../components/admin/AdminCourses';
 import AdminGallery from '../components/admin/AdminGallery';
-import AdminAffiliates from '../components/admin/AdminAffiliates';
-import AdminCategories from '../components/admin/AdminCategories';
+import AdminAffiliates from './components/admin/AdminAffiliates';
+import AdminCategories from './components/admin/AdminCategories';
+import AdminArticles from './components/admin/AdminArticles';
 
-function AdminDashboard({ products, setProducts, orders, setOrders, users, setUsers, currentUser, onLogout, courses, setCourses, enrollments, setEnrollments, affiliates, setAffiliates, gallery, setGallery, categories, setCategories, db }) {
+function AdminDashboard({ products, setProducts, orders, setOrders, users, setUsers, currentUser, onLogout, courses, setCourses, enrollments, setEnrollments, affiliates, setAffiliates, gallery, setGallery, categories, setCategories, blogs, setBlogs, db, setCurrentView }) {
   const [activeTab, setActiveTab] = useState('overview');
 
   const tabs = [
@@ -20,6 +21,7 @@ function AdminDashboard({ products, setProducts, orders, setOrders, users, setUs
     { id: 'users', label: 'Users', icon: Users },
     { id: 'courses', label: 'Courses', icon: GraduationCap },
     { id: 'gallery', label: 'Gallery', icon: Image },
+    { id: 'articles', label: 'Articles', icon: FileText },
     { id: 'affiliates', label: 'Affiliates', icon: LinkIcon },
     { id: 'categories', label: 'Categories', icon: Tag },
   ];
@@ -67,6 +69,7 @@ function AdminDashboard({ products, setProducts, orders, setOrders, users, setUs
         {activeTab === 'users' && <AdminUsers users={users} setUsers={setUsers} db={db} />}
         {activeTab === 'courses' && <AdminCourses courses={courses} setCourses={setCourses} enrollments={enrollments} setEnrollments={setEnrollments} db={db} />}
         {activeTab === 'gallery' && <AdminGallery gallery={gallery} setGallery={setGallery} db={db} />}
+        {activeTab === 'articles' && <AdminArticles blogs={blogs} setBlogs={setBlogs} db={db} setCurrentView={setCurrentView} />}
         {activeTab === 'affiliates' && <AdminAffiliates affiliates={affiliates} setAffiliates={setAffiliates} db={db} />}
         {activeTab === 'categories' && <AdminCategories categories={categories} db={db} />}
       </div>

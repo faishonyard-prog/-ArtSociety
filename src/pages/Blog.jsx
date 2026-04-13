@@ -51,12 +51,36 @@ function ArticleView({ post, onBack, currentUser, setCurrentView, setBlogs }) {
           </div>
         </div>
         
-        <div className="prose prose-stone max-w-none text-lg text-stone-700 leading-relaxed space-y-8 font-light">
-          {post.content.split('\n\n').map((paragraph, index) => (
-            <p key={index}>{paragraph}</p>
-          ))}
-        </div>
+        <div 
+          className="prose prose-stone max-w-none text-lg text-stone-700 leading-relaxed space-y-8 font-light article-content"
+          dangerouslySetInnerHTML={{ __html: post.content }}
+        />
       </article>
+
+      <style jsx>{`
+        .article-content :global(h1), .article-content :global(h2), .article-content :global(h3) {
+          font-family: var(--font-serif);
+          font-weight: bold;
+          color: #1c1917;
+          margin-top: 2rem;
+          margin-bottom: 1rem;
+        }
+        .article-content :global(p) {
+          margin-bottom: 1.5rem;
+        }
+        .article-content :global(ul), .article-content :global(ol) {
+          padding-left: 1.5rem;
+          margin-bottom: 1.5rem;
+        }
+        .article-content :global(li) {
+          margin-bottom: 0.5rem;
+        }
+        .article-content :global(img) {
+          border-radius: 1rem;
+          margin: 2rem 0;
+          box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+        }
+      `}</style>
 
       <div className="mt-20 pt-12 border-t border-stone-200">
         <h3 className="text-2xl font-serif font-bold text-stone-900 mb-8">

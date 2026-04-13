@@ -336,7 +336,9 @@ export default function App() {
                 affiliates={affiliates} setAffiliates={setAffiliates}
                 gallery={gallery} setGallery={setGallery}
                 categories={categories} setCategories={setCategories}
+                blogs={blogs} setBlogs={setBlogs}
                 currentUser={currentUser}
+                setCurrentView={setCurrentView}
                 onLogout={() => { setCurrentUser(null); setCurrentView('home'); }}
                 db={{ update: dbUpdate, insert: dbInsert, delete: dbDelete, refresh: refreshData, uploadImage }}
               />
