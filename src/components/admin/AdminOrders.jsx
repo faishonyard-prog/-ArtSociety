@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Trash2 } from 'lucide-react';
 
 function AdminOrders({ orders, db }) {
   const [filterStatus, setFilterStatus] = useState('All');
@@ -7,6 +8,12 @@ function AdminOrders({ orders, db }) {
 
   const handleStatusChange = async (id, newStatus) => {
     await db.update('orders', id, { status: newStatus });
+  };
+
+  const handleDelete = async (id) => {
+    if (window.confirm("Are you sure you want to delete this order record?")) {
+      await db.delete('orders', id);
+    }
   };
 
   return (
@@ -34,7 +41,8 @@ function AdminOrders({ orders, db }) {
               <th className="p-4 font-bold">Customer</th>
               <th className="p-4 font-bold">Item</th>
               <th className="p-4 font-bold">Amount</th>
-              <th className="p-4 font-bold">Status</th>
+              <th className="p-4 font-bold text-center">Status</th>
+              <th className="p-4 font-bold text-right">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-stone-100">
@@ -59,6 +67,15 @@ function AdminOrders({ orders, db }) {
                     <option value="Delivered">Delivered</option>
                     <option value="Cancelled">Cancelled</option>
                   </select>
+                </td>
+                <td className="p-4 text-right">
+                  <button 
+                    onClick={() => handleDelete(order.id)}
+                    className="p-2 text-stone-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                    title="Delete Order"
+                  >
+                    <Trash2 size={16} />
+                  </button>
                 </td>
               </tr>
             ))}
