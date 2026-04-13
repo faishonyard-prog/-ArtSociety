@@ -9,15 +9,7 @@ export default defineConfig({
     tailwindcss(),
   ],
   build: {
-    chunkSizeWarningLimit: 1000,
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          'vendor-react': ['react', 'react-dom'],
-          'vendor-utils': ['lucide-react', '@supabase/supabase-js'],
-        }
-      }
-    }
+    chunkSizeWarningLimit: 1000
   }
 })
 
